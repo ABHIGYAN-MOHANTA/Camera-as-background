@@ -1,0 +1,62 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Camera Background Example</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: -1;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      // get camera stream
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(stream) {
+          var video = document.createElement('video');
+          video.srcObject = stream;
+          video.play();
+
+          // create canvas element
+          var canvas = document.getElementById('canvas');
+          var ctx = canvas.getContext('2d');
+
+          // continuously draw video frames onto canvas
+          function draw() {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            socket.emit('stream', canvas.toDataURL('image/png'));
+            requestAnimationFrame(draw);
+          }
+
+          // initialize socket.io connection
+          var socket = io();
+          socket.on('connect', function() {
+            console.log('Connected to server');
+          });
+
+          // start drawing frames
+          video.addEventListener('loadedmetadata', function() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            requestAnimationFrame(draw);
+          });
+        })
+        .catch(function(err) {
+          console.log('Error accessing camera:', err);
+        });
+    </script>
+  </body>
+</html>
